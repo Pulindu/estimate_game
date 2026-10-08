@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bead Jar Guessing Game</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#fff8e7;--card:#fff;--ink:#2b2d42;--mut:#6b6f85;--acc:#5b5fef;--line:#e3dfd0}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1f2b;--card:#2a2d3e;--ink:#f3f3f8;--mut:#a9adc4;--acc:#8b8eff;--line:#41455c}}
+:root[data-theme="dark"]{--bg:#1d1f2b;--card:#2a2d3e;--ink:#f3f3f8;--mut:#a9adc4;--acc:#8b8eff;--line:#41455c}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 "Trebuchet MS","Segoe UI",system-ui,sans-serif}
+main{max-width:640px;margin:0 auto;padding:16px}
+h1{font-size:28px;margin:8px 0}
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:18px;margin:14px 0}
+.intro{border-color:var(--acc)}
+h2{font-size:19px;margin:0 0 4px}.hint{color:var(--mut);font-size:15px;margin:0 0 10px}
+.colors{display:flex;flex-wrap:wrap;gap:10px}
+.c{width:64px;text-align:center;font-size:14px;cursor:pointer}
+.c input{position:absolute;opacity:0}
+.c i{display:block;width:52px;height:52px;border-radius:50%;margin:0 auto 2px;border:4px solid transparent;box-shadow:inset 0 -6px 0 rgba(0,0,0,.18)}
+.c input:checked+i{border-color:var(--ink);transform:scale(1.12)}
+.c input:focus-visible+i{outline:3px solid var(--acc)}
+.opts label{display:block;padding:10px 12px;border:2px solid var(--line);border-radius:12px;margin:6px 0;cursor:pointer}
+.opts label:has(input:checked){border-color:var(--acc);background:color-mix(in srgb,var(--acc) 14%,transparent)}
+input[type=number],input[type=text],select,textarea{width:100%;font:inherit;padding:10px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink)}
+textarea{min-height:70px}
+.row{display:flex;gap:10px}.row>div{flex:1}
+small{color:var(--mut)}
+button{font:inherit;font-weight:700;background:var(--acc);color:#fff;border:0;border-radius:14px;padding:12px 22px;cursor:pointer}
+button:disabled{opacity:.6}
+.err{color:#d6336c;font-weight:700;min-height:1.4em}
+.hide{display:none}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{border-bottom:1px solid var(--line);padding:6px;text-align:left}
+.scroll{overflow-x:auto}
+.step{display:none}.step.on{display:block}
+.bar{height:12px;background:var(--line);border-radius:8px;overflow:hidden;margin:10px 0 2px}.bar b{display:block;height:100%;width:0;background:var(--acc);transition:width .3s}
+.nav{display:flex;justify-content:space-between;gap:10px}
+button.ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
+.pop{animation:pop .5s ease}@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}.sw{display:inline-block;width:.9em;height:.9em;border-radius:50%;vertical-align:-.1em;margin:0 .15em}
+</style></head>
+<body><main>
+<h1>🫙 Bead Jar Guessing Game</h1>
+
+<div class="card intro" id="intro">
+<p style="margin:0">Look at the jar! It is filled with <b>1,000 beads</b> in <b>5 different colors</b>. Each color has a <b>different</b> number of beads, and when we add them all together, we get exactly <b>1,000</b>.</p>
+</div>
+
+<div id="form"><div class="bar" aria-hidden="true"><b id="prog"></b></div><div class="hint" id="count"></div>
+<div class="card step"><h2>👋 About you</h2>
+<p class="hint">First, tell us your grade.</p>
+<select id="grade"><option value="">Choose your grade…</option><option>Kindergarten</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option><option>Grade 7</option><option>Grade 8</option><option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option></select>
+</div>
+
+<div class="card step"><h2>1️⃣ Which color do you think has the MOST beads?</h2>
+<p class="hint">Look at the jar and make your best guess. Tap a color.</p>
+<div class="colors" id="colors"></div></div>
+
+<div class="card step" id="fb"><div id="fbemoji" style="font-size:54px;text-align:center"></div><h2 id="fbtitle" style="text-align:center"></h2><p id="fbtext" style="margin:8px 0 0"></p></div>
+
+<div class="card step"><h2>2️⃣ Let's test your guess with a scoop!</h2>
+<p class="hint">Scoop out some beads from the jar. Does your scoop agree with your guess?</p>
+<div class="opts" id="q2">
+<label><input type="radio" name="q2" value="Yes"> ✅ Yes, my color has the most beads in my scoop</label>
+<label><input type="radio" name="q2" value="No"> ❌ No, a different color has more</label>
+<label><input type="radio" name="q2" value="Not sure"> 🤔 I'm not sure</label></div></div>
+
+<div class="card step"><h2>3️⃣ Count your scoop!</h2>
+<p class="hint">How many beads of <b>your chosen color</b> are in your scoop?</p>
+<div class="row"><div><label for="mine">Beads of my color</label><input id="mine" type="number" min="0" max="1000" inputmode="numeric"></div>
+<div><label for="all">All beads in my scoop <small>(optional)</small></label><input id="all" type="number" min="0" max="1000" inputmode="numeric"></div></div></div>
+
+<div class="card step"><h2>4️⃣ Time to estimate! <span id="q4e">🔴</span></h2>
+<p class="hint">Look at the numbers in your scoop. If the whole jar has 1,000 beads, about how many <b id="q4c">red</b> beads do you think there are?</p>
+<input id="est" type="number" min="0" max="1000" inputmode="numeric" placeholder="My estimate (0 to 1000)"></div>
+
+<div id="done" class="card hide pop"><div id="dEmoji" style="font-size:54px;text-align:center"></div><h2 id="dTitle" style="text-align:center"></h2><p id="dText" style="margin:8px 0 0"></p><div style="text-align:center;margin-top:14px"><button id="again" class="hide">Try again 🔄</button></div><p class="hint" style="margin:12px 0 0">Thanks for playing the Bead Jar Guessing Game! 🫙</p></div>
+<div class="err" id="err" role="alert"></div>
+<div class="nav"><button id="back" class="ghost">⬅ Back</button><button id="next">Next ➡</button></div>
+</div>
+</main>
+<script>
+var COLORS=[["Red","#e63946"],["Pink","#ff7eb6"],["Green","#2fb35c"],["Yellow","#f6c90e"],["Orange","#ff8c1a"]];
+var box=document.getElementById("colors");
+COLORS.forEach(function(c){var l=document.createElement("label");l.className="c";
+l.innerHTML='<input type="radio" name="color" value="'+c[0]+'"><i style="background:'+c[1]+'"></i>'+c[0];box.appendChild(l);});
+
+var $=function(i){return document.getElementById(i)};
+var steps=[].slice.call(document.querySelectorAll(".step")),cur=0;
+function val(n){var r=document.querySelector('input[name="'+n+'"]:checked');return r?r.value:""}
+function num(i){var v=$(i).value;return v===""?null:Number(v)}
+function bad(v,m){return v!==null&&(!Number.isInteger(v)||v<0||v>m)}
+function check(i){
+  if(i===0)return $("grade").value?"":"Please choose your grade.";
+  if(i===1)return val("color")?"":"Please tap a color.";
+  if(i===2)return "";
+  if(i===3)return val("q2")?"":"Please pick an answer.";
+  if(i===4){var m=num("mine"),a=num("all");
+    if(m===null||bad(m,1000))return "Please type a whole number.";
+    if(bad(a,1000)||(a!==null&&a<m))return "Beads in your scoop can't be fewer than beads of your color.";return ""}
+  var e=num("est");return(e===null||bad(e,1000))?"Please type a whole number from 0 to 1000.":""}
+function fb(){
+  var c=val("color"),hex={};COLORS.forEach(function(x){hex[x[0]]=x[1]});
+  var sw='<span class="sw" style="background:'+hex[c]+'"></span>';
+  if(c==="Red"){$("fbemoji").textContent="🎯";$("fbtitle").textContent="Bullseye! Amazing!";
+    $("fbtext").innerHTML="Your guess is <b>absolutely correct</b> — red is the champion! 🎉<br><br>Next, do you want to see how many red beads are hiding in the entire jar? 🔍"}
+  else{$("fbemoji").textContent="🤭";$("fbtitle").textContent="Ooh, so close!";
+    $("fbtext").innerHTML="Actually, it's <b>red</b> that wins this round. But never mind — great detectives make guesses first, then test them! 🕵️<br><br>Do you want to see how many "+sw+"<b>"+c.toLowerCase()+"</b> beads are in the jar? 🔍"}
+  steps[2].classList.remove("pop");void steps[2].offsetWidth;steps[2].classList.add("pop")}
+var TRUTH={Red:[270,330,300],Pink:[125,175,150],Orange:[125,175,150],Green:[175,225,200],Yellow:[175,225,200]};
+var EMO={Red:"🔴",Pink:"🩷",Green:"🟢",Yellow:"🟡",Orange:"🟠"};
+function result(e){
+  var c=val("color"),r=TRUTH[c],em,t,x;
+  $("again").classList.add("hide");
+  if(e>=r[0]&&e<=r[1]){em="🎯";t="Wow, so close!";
+    x="Your estimate is so close — there are actually <b>"+r[2]+"</b> "+c.toLowerCase()+" beads in the jar! Amazing estimating! 🌟"}
+  else{em="🙂";t="Good guess!";
+    x="Your guess is close enough! But if you want to get <b>really</b> close, give it another try. Grab a new scoop and count again! 🥄";
+    $("again").classList.remove("hide")}
+  $("dEmoji").textContent=em;$("dTitle").textContent=t;$("dText").innerHTML=x}
+$("again").onclick=function(){
+  $("done").classList.add("hide");
+  ["count","err"].forEach(function(i){$(i).classList.remove("hide")});
+  document.querySelector(".nav").classList.remove("hide");
+  cur=3;show()};
+function show(){
+  if(cur===5){var c=val("color");$("q4c").textContent=c.toLowerCase();$("q4e").textContent=EMO[c]}
+  if(cur===2)fb();
+  steps.forEach(function(x,i){x.classList.toggle("on",i===cur)});
+  $("prog").style.width=(cur/steps.length*100)+"%";
+  $("intro").style.display=cur?"none":"";$("count").textContent=cur===0?"Let's get started!":cur===2?"Your result!":"Question "+(cur<2?cur:cur-1)+" of 4";
+  $("back").style.visibility=cur?"visible":"hidden";
+  $("next").textContent=cur===steps.length-1?"Finish 🏁":cur===2?"Yes, show me! 🔎":"Next ➡";
+  $("err").textContent="";window.scrollTo(0,0)}
+$("back").onclick=function(){if(cur>0){cur--;show()}};
+$("next").onclick=function(){
+  var m=check(cur);if(m){$("err").textContent=m;return}
+  if(cur<steps.length-1){cur++;show()}
+  else{steps[cur].classList.remove("on");$("prog").style.width="100%";
+    ["count","err"].forEach(function(i){$(i).classList.add("hide")});
+    document.querySelector(".nav").classList.add("hide");$("intro").classList.add("hide");result(num("est"));$("done").classList.remove("hide")}};
+show();
+</script></body></html>
